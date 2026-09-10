@@ -3,3 +3,8 @@ api/config.php
 *.key
 *.pem
 .DS_Store
+
+# Local configuration variants and editor artifacts
+.env.*
+*.swp
+*~
