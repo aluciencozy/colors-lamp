@@ -1,0 +1,5 @@
+api/config.php
+.env
+*.key
+*.pem
+.DS_Store
