@@ -1,0 +1,28 @@
+@startuml
+title COLORS - Activity Diagram
+
+start
+
+:Enter username and password;
+
+if (Login successful?) then (yes)
+    :Open color page;
+
+    repeat
+        switch (User selects)
+            case (Add Color)
+                :Save color to database;
+            case (Search Colors)
+                :Search and display matching colors;
+            case (Log Out)
+                :Clear cookie;
+                :Return to login page;
+        endswitch
+    repeat while (Action was not Log Out?) is (yes) not (no)
+
+else (no)
+    :Display login error;
+endif
+
+stop
+@enduml

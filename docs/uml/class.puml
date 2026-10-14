@@ -1,0 +1,20 @@
+@startuml
+title COLORS - Class Diagram
+
+class Users <<database table>> {
+    +ID : int <<PK>>
+    +firstName : string
+    +lastName : string
+    +Login : string
+    +Password : string
+}
+
+class Colors <<database table>> {
+    +ID : int <<PK>>
+    +UserId : int <<FK>>
+    +Name : string
+}
+
+Users::ID "1" -- "  0..*" Colors::UserId : owns
+
+@enduml
