@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and Test
 
 on: [push, pull_request]
 
@@ -8,17 +8,30 @@ permissions:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test-password
+          MYSQL_DATABASE: COP4331
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptest-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up Node.js for linting
+      - name: Set up Node.js for linting and testing
         uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: npm
 
-      - name: Install linting tools
+      - name: Install dependencies
         run: npm ci
 
       - name: Lint HTML
@@ -29,3 +42,45 @@ jobs:
 
       - name: Lint JavaScript
         run: npm run lint:js
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+          coverage: none
+
+      - name: Set up test database
+        env:
+          MYSQL_PWD: test-password
+        run: |
+          mysql -h 127.0.0.1 -u root COP4331 <<'SQL'
+          CREATE TABLE Users (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            firstName VARCHAR(50), lastName VARCHAR(50),
+            Login VARCHAR(100), Password VARCHAR(255)
+          );
+          CREATE TABLE Colors (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            UserId INT, Name VARCHAR(255)
+          );
+          INSERT INTO Users (firstName, lastName, Login, Password)
+          VALUES ('Jest', 'User', 'jest-user', 'jest-password');
+          SQL
+          cat > api/config.php <<'PHP'
+          <?php
+          return [
+              'host' => '127.0.0.1',
+              'username' => 'root',
+              'password' => 'test-password',
+              'database' => 'COP4331'
+          ];
+          PHP
+
+      - name: Start PHP server
+        run: |
+          php -S 127.0.0.1:8000 -t . > /tmp/colors-php.log 2>&1 &
+          curl --retry 10 --retry-connrefused --retry-delay 1 --fail --silent --output /dev/null http://127.0.0.1:8000/index.html
+
+      - name: Run Jest tests
+        run: npm test
